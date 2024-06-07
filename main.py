@@ -1,9 +1,6 @@
-"""Wprot Bot"""
+"""WprotBot"""
 import os
-from asyncio import sleep
-from sqlite3 import Row
-import aiosqlite
-from twitchio import Message  # type: ignore
+from twitchio import Message, PartialUser  # type: ignore
 from twitchio.ext import commands  # type: ignore
 from dotenv import load_dotenv
 
@@ -12,47 +9,44 @@ from title_manager import TitleManager
 
 class Bot(commands.Bot):
     """WprotBot"""
-    def __init__(self, greeting_template: str = '{title} вошёл в чат') -> None:
+    def __init__(
+            self,
+            reward_id: str,
+            access_token: str,
+            channels: list,
+            title_manager: TitleManager) -> None:
         """
         Initialise the Bot
         """
-        self.title_reward_id = os.getenv('REWARD_ID')
-        self.greeting_template = greeting_template
-
-        # we cannot create connection outside async
-        self.db: aiosqlite.Connection | None = None
-        self.title_manager: TitleManager | None = None
+        self.title_reward_id = reward_id
+        self.token = access_token
+        self.title_manager = title_manager
 
         super().__init__(
-            token=os.getenv('ACCESS_TOKEN'),
+            token=self.token,
             prefix='!',
-            initial_channels=['boxfrommars'])
+            initial_channels=channels)
 
     async def event_ready(self) -> None:
         """
         Bot logged in. Connect to db and instantiate title manager
         """
         print(f'Logged in as | {self.nick} [{self.user_id}]')
-
-        self.db = await aiosqlite.connect(str(os.getenv('DB_NAME')))
-        self.db.row_factory = Row
-
-        self.title_manager = TitleManager(self.db, cooldown=5)
         await self.title_manager.up()
 
     async def event_message(self, message: Message) -> None:
         if message.echo:  # ignore messages sent by the bot
             return
-        if self.title_manager is None:  # something wrong with db (for mypy...)
+        if self.title_manager is None:  # something wrong (for mypy...)
             return
 
-        print(f'{message.content} [{message.author.name} {message.timestamp}]')
+        print(f'[{message.author.name} {message.timestamp}] {message.content}')
 
         if self.is_reward_message(message):
             # Save title for user if the reward message
             await self.title_manager.set_title(message.content, message.author)
         else:
-            # The title record if purchased, otherwise None.
+            # The title record if purchased, None otherwise.
             title_record = await self.title_manager.get_title(message.author)
 
             if title_record is not None:
@@ -60,48 +54,81 @@ class Bot(commands.Bot):
                 # so update last posted time (for cooldown check)
                 await self.title_manager.update_last_posted_at(message.author)
 
-                # Greeting is needed (subscription is active and cooldown)
+                # Greeting is needed (active subscription and proper cooldown)
                 if self.title_manager.is_greeting_needed(title_record):
-                    # format greeting
-                    greeting = self.greeting_template.format(**title_record)
+                    greeting = self.title_manager.greeting(title_record)
+                    broadcaster = await message.channel.user()
 
-                    await sleep(1)
-                    await message.channel.send(greeting)
+                    await self.announce(broadcaster, greeting)
 
         await self.handle_commands(message)
 
     @commands.command()
-    async def hello(self, ctx: commands.Context) -> None:
-        """
-        Test command. Send a hello back!
-        """
-        print('Hello command received')
-        await sleep(1)
-        await ctx.send(f'Hello {ctx.author.name}!')
+    async def title(
+            self,
+            ctx: commands.Context,
+            action: str | None = None) -> None:
+        """Get title info or delete title"""
+
+        user = ctx.author  # @TODO mods should be able to set a user as a param
+
+        title_record = await self.title_manager.get_title(user)
+
+        if title_record is None:  # do nothing if no title for the user
+            return
+
+        if action == 'delete':
+            await self.title_manager.delete_title(user)
+            await ctx.send(f'@{user.name}, ваш титул удалён!')
+        else:
+            # show info
+            await ctx.send(self.title_manager.format_title_info(title_record))
 
     async def close(self):
         """
-        Close database connection before bot close
+        Close database connection before bot shutdown
         """
-        if self.db:
-            await self.db.commit()
-            await self.db.close()
-
+        await self.title_manager.close()
         await super().close()
 
+    async def announce(self, broadcaster: PartialUser, content: str):
+        """Send announcement to the broadcaster channel"""
+        await broadcaster.chat_announcement(
+            token=self.token,
+            moderator_id=str(self.user_id),
+            message=content,
+            color='green'
+        )
+
     def is_reward_message(self, message: Message) -> bool:
-        """Check that message is the reward"""
+        """Check the message for the reward"""
         return message.tags \
             and message.tags.get('custom-reward-id') == self.title_reward_id
 
 
-def main() -> None:
-    """Run bot"""
+if __name__ == '__main__':
     load_dotenv()
 
-    bot = Bot()
+    title_reward_id = os.getenv('REWARD_ID')
+    bot_access_token = os.getenv('ACCESS_TOKEN')
+    bot_channels = os.getenv('CHANNELS')
+
+    if not (title_reward_id and bot_access_token and bot_channels):
+        raise KeyError(
+            'Missing some enviroment variables '
+            '(REWARD_ID or ACCESS_TOKEN or CHANNELS) '
+            'You should add them to .env file')
+
+    # @TODO use a connection instead of db_name
+    bot_title_manager = TitleManager(
+        db_name=os.getenv('DB_NAME', 'wprotbot.db'),
+        template='{title} @{username} вошёл в чат'
+    )
+
+    bot = Bot(
+        reward_id=title_reward_id,
+        access_token=bot_access_token,
+        channels=bot_channels.split(','),
+        title_manager=bot_title_manager
+    )
     bot.run()
-
-
-if __name__ == '__main__':
-    main()
