@@ -9,7 +9,7 @@ from sqlite3 import Row
 from aiosqlite import Connection
 import aiosqlite
 from dateutil import parser
-from twitchio import Chatter  # type: ignore
+from twitchio import PartialChatter  # type: ignore
 
 
 class TitleManager:
@@ -29,7 +29,7 @@ class TitleManager:
         self.lifetime = lifetime
         self.template = template
 
-    async def set_title(self, title: str, user: Chatter) -> None:
+    async def set_title(self, title: str, user: PartialChatter) -> None:
         """Add or update user title"""
         if not self.db:
             raise RuntimeError('No DB connection')
@@ -38,21 +38,23 @@ class TitleManager:
         await cur.execute(  # upsert title
             """
             INSERT INTO titles (
-                user_id, username,
-                purchased_at, last_posted_at,
+                username,
+                purchased_at,
+                last_posted_at,
                 title)
             VALUES (
-                :user_id, :username,
-                :purchased_at, :purchased_at,
+                :username,
+                :purchased_at,
+                :purchased_at,
                 :title)
-            ON CONFLICT (user_id)
+            ON CONFLICT (username)
             DO UPDATE SET
                 username=:username,
-                purchased_at=:purchased_at, last_posted_at=:purchased_at,
+                purchased_at=:purchased_at,
+                last_posted_at=:purchased_at,
                 title=:title
             """,
             {
-                'user_id': user.id,
                 'username': user.name,
                 'purchased_at': datetime.now(UTC).isoformat(),
                 'title': title
@@ -60,43 +62,47 @@ class TitleManager:
         )
         await self.db.commit()
 
-    async def get_title(self, user: Chatter) -> Row | None:
+    async def get_title(self, user: PartialChatter) -> Row | None:
         """Get user title"""
         if not self.db:
             raise RuntimeError('No DB connection')
 
         cur = await self.db.cursor()
         await cur.execute(
-            'SELECT * FROM titles WHERE user_id = :user_id',
-            {'user_id': user.id}
+            'SELECT * FROM titles WHERE username = :username',
+            {'username': user.name}
         )
 
         return await cur.fetchone()
 
-    async def delete_title(self, user: Chatter) -> None:
+    async def delete_title(self, user: PartialChatter) -> None:
         """Delete user title"""
         if not self.db:
             raise RuntimeError('No DB connection')
 
         cur = await self.db.cursor()
         await cur.execute(
-            'DELETE FROM titles WHERE user_id = :user_id',
-            {'user_id': user.id}
+            'DELETE FROM titles WHERE username = :username',
+            {'username': user.name}
         )
 
         await self.db.commit()
 
-    async def update_last_posted_at(self, user: Chatter) -> None:
+    async def update_last_posted_at(self, user: PartialChatter) -> None:
         """Update last message time"""
         if not self.db:
             raise RuntimeError('No DB connection')
 
         cur = await self.db.cursor()
         await cur.execute(
-            'UPDATE titles SET last_posted_at = :now WHERE user_id = :user_id',
+            """
+            UPDATE titles
+            SET last_posted_at = :now
+            WHERE username = :username
+            """,
             {
                 'now': datetime.now(UTC).isoformat(),
-                'user_id': user.id
+                'username': user.name
             }
         )
         await self.db.commit()
@@ -151,8 +157,7 @@ class TitleManager:
         await cur.execute(
             """
             CREATE TABLE IF NOT EXISTS titles (
-                user_id TEXT PRIMARY KEY,
-                username TEXT,
+                username TEXT PRIMARY KEY,
                 purchased_at DATETIME,
                 last_posted_at DATETIME,
                 title TEXT

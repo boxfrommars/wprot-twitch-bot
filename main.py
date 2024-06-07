@@ -1,6 +1,7 @@
 """WprotBot"""
 import os
-from twitchio import Message, PartialUser  # type: ignore
+from twitchio import (  # type: ignore
+    Message, PartialUser, PartialChatter)
 from twitchio.ext import commands  # type: ignore
 from dotenv import load_dotenv
 
@@ -67,10 +68,13 @@ class Bot(commands.Bot):
     async def title(
             self,
             ctx: commands.Context,
-            action: str | None = None) -> None:
+            action: str | None,
+            user: PartialChatter | None) -> None:
         """Get title info or delete title"""
 
-        user = ctx.author  # @TODO mods should be able to set a user as a param
+        # moderators can
+        if not (user and ctx.author.is_mod):
+            user = ctx.author
 
         title_record = await self.title_manager.get_title(user)
 
