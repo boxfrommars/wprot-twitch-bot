@@ -68,11 +68,14 @@ class Bot(commands.Bot):
     async def title(
             self,
             ctx: commands.Context,
-            action: str | None,
-            user: PartialChatter | None) -> None:
+            action: str | None = 'info',
+            user: PartialChatter | None = None) -> None:
         """Get title info or delete title"""
 
-        # moderators can
+        if action not in ['info', 'delete']:
+            return
+
+        # moderators can manage users title
         if not (user and ctx.author.is_mod):
             user = ctx.author
 

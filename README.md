@@ -30,5 +30,7 @@ python main.py
 Purchase custom reward with `REWARD_ID` to get a title
 
 Available commands:
-* `!title` Get your title info
+* `!title` or `!title info` Get your title info
 * `!title delete` Delete your title
+* `!title info @wprotvbanke` *(moderators only)* Get information about the title of a given user
+* `!title delete @wprotvbanke` *(moderators only)* Delete this user's title
