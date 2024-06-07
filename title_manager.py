@@ -18,8 +18,8 @@ class TitleManager:
             self,
             db_name: str,
             template: str = '{title} @{username} вошёл в чат',
-            cooldown: int = 8 * 60 * 60,  # 8 hours
-            lifetime: int = 7 * 24 * 60 * 60) -> None:  # a week
+            cooldown: int = 6 * 60 * 60,  # 8 hours
+            lifetime: int = 14 * 24 * 60 * 60) -> None:  # a week
 
         self.db_name = db_name
         self.db: Connection | None

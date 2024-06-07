@@ -111,24 +111,29 @@ if __name__ == '__main__':
 
     title_reward_id = os.getenv('REWARD_ID')
     bot_access_token = os.getenv('ACCESS_TOKEN')
-    bot_channels = os.getenv('CHANNELS')
+    bot_channel = os.getenv('CHANNEL')
 
-    if not (title_reward_id and bot_access_token and bot_channels):
+    if not (title_reward_id and bot_access_token and bot_channel):
         raise KeyError(
             'Missing some enviroment variables '
-            '(REWARD_ID or ACCESS_TOKEN or CHANNELS) '
+            '(REWARD_ID or ACCESS_TOKEN or CHANNEL) '
             'You should add them to .env file')
 
     # @TODO use a connection instead of db_name
     bot_title_manager = TitleManager(
         db_name=os.getenv('DB_NAME', 'wprotbot.db'),
-        template='{title} @{username} вошёл в чат'
+        template=os.getenv('GREETING_TEMPLATE',
+                           '{title} @{username} вошёл в чат'),
+        cooldown=int(os.getenv('TITLE_COOLDOWN_SEC', '21600')),
+        lifetime=int(os.getenv('TITLE_LIFETIME_SEC', '1209600')),
     )
+
+    print(os.getenv('GREETING_TEMPLATE'))
 
     bot = Bot(
         reward_id=title_reward_id,
         access_token=bot_access_token,
-        channels=bot_channels.split(','),
+        channels=[bot_channel],
         title_manager=bot_title_manager
     )
     bot.run()
