@@ -25,7 +25,7 @@ Run bot:
 python main.py
 ```
 
-### Usage in chat
+### Usage
 
 Purchase custom reward with `REWARD_ID` to get a title
 

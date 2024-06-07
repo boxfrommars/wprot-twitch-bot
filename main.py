@@ -123,12 +123,10 @@ if __name__ == '__main__':
     bot_title_manager = TitleManager(
         db_name=os.getenv('DB_NAME', 'wprotbot.db'),
         template=os.getenv('GREETING_TEMPLATE',
-                           '{title} @{username} вошёл в чат'),
+                           '{title} @{username} has joined the chat!'),
         cooldown=int(os.getenv('TITLE_COOLDOWN_SEC', '21600')),
         lifetime=int(os.getenv('TITLE_LIFETIME_SEC', '1209600')),
     )
-
-    print(os.getenv('GREETING_TEMPLATE'))
 
     bot = Bot(
         reward_id=title_reward_id,
