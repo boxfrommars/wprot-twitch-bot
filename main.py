@@ -65,7 +65,7 @@ class Bot(commands.Bot):
         await self.handle_commands(message)
 
     @commands.command()
-    async def title(
+    async def tit(
             self,
             ctx: commands.Context,
             action: str | None = 'info',
