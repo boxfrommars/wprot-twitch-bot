@@ -1,4 +1,5 @@
 aiosqlite~=0.20.0
+openai~=1.33.0
 python-dateutil~=2.9.0
 python-dotenv~=1.0.1
 twitchio~=2.9.1
