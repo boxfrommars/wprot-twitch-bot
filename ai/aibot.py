@@ -2,19 +2,22 @@
 import asyncio
 
 from openai import AsyncOpenAI
-from ai.prompts import prompts
 
 
 class AIBot:
     """AI Bot"""
-    def __init__(self, client: AsyncOpenAI) -> None:
+    def __init__(
+            self,
+            client: AsyncOpenAI,
+            react_title_prompt: str = 'React funny to the nickname') -> None:
 
+        self.react_title_prompt = react_title_prompt
         self.client = client
 
     async def rate_title(self, title: str):
         """Rate title"""
         return await self.completion(
-            prompt=prompts['rate_title_as_critic'],
+            prompt=self.react_title_prompt,
             query=title)
 
     async def completion(self, prompt: str, query: str) -> str | None:
@@ -35,16 +38,13 @@ class AIBot:
         return None
 
 
-async def main(title):
-    """Test AIBot"""
-    ai_bot = AIBot(AsyncOpenAI())
-    answer = await ai_bot.rate_title(title)
-    print(answer)
-
-
 if __name__ == '__main__':
+    # test bot
     from dotenv import load_dotenv
 
     load_dotenv()
 
-    asyncio.run(main('мой скромный создатель'))
+    ai_bot = AIBot(client=AsyncOpenAI())
+    answer = asyncio.run(ai_bot.rate_title('Mister Streamer'))
+
+    print(answer)

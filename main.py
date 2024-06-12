@@ -148,11 +148,17 @@ if __name__ == '__main__':
 
     is_ai_enabled = os.getenv('IS_AI_ENABLED', '').lower() == 'true'
 
+    aibot = AIBot(
+        client=AsyncOpenAI(),
+        react_title_prompt=os.getenv(
+            'REACT_TITLE_PROMPT', 'React funny to the nickname')
+    ) if is_ai_enabled else None
+
     bot = Bot(
         reward_id=title_reward_id,
         access_token=bot_access_token,
         channels=[bot_channel],
         title_manager=bot_title_manager,
-        ai_bot=AIBot(client=AsyncOpenAI()) if is_ai_enabled else None
+        ai_bot=aibot
     )
     bot.run()

@@ -21,6 +21,7 @@ Set enviroment variables:
 * `GREETING_TEMPLATE` *(optional, default `{title} @{username} has joined the chat!`)* Announcement template
 * `IS_AI_ENABLED` *(optional, default `False`)* If enabled, the bot will react to the purchased title using OpenAI.
 * `OPENAI_API_KEY` *(required if `IS_AI_ENABLED`)* OpenAI API Key
+* `REACT_TITLE_PROMPT` *(optional, default `React funny to the nickname`)* Prompt for the bot reaction
 
 Run bot:
 ```sh

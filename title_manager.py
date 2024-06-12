@@ -143,9 +143,9 @@ class TitleManager:
 
         return (
             f'@{title_record["username"]}, '
-            f'ваш титул "{title_record["title"]}" '
-            f'получен {purchased_at.strftime('%d.%m.%Y')} '
-            f'({"Активен" if is_active else "Просрочен"})'
+            f'Your title: "{title_record["title"]}" '
+            f'purchased on {purchased_at.strftime('%Y-%m-%d')} '
+            f'({"Active" if is_active else "Deactivated"})'
         )
 
     async def up(self) -> None:
