@@ -1,6 +1,6 @@
 ## Title Bot
 
-Twitch Bot that allows users to purchase a title with channel points. When the user sends their first message in chat after a long time, the bot announces the user using the title.
+Twitch Bot that allows users to purchase a title with channel points. When the user sends their first message in chat after a long time, the bot announces the user using the title. If the "IS_AI_ENABLED" setting is enabled, the bot will also respond to the purchased title using OpenAI
 
 ### Installation
 
@@ -19,6 +19,8 @@ Set enviroment variables:
 * `TITLE_COOLDOWN_SEC` *(optional, default 6 hours)* If the user hasn't written in the chat for a long time, then announce them after their message
 * `TITLE_LIFETIME_SEC` *(optional, default 2 weeks)* A title is purchased for this period
 * `GREETING_TEMPLATE` *(optional, default `{title} @{username} has joined the chat!`)* Announcement template
+* `IS_AI_ENABLED` *(optional, default `False`)* If enabled, the bot will react to the purchased title using OpenAI.
+* `OPENAI_API_KEY` *(required if `IS_AI_ENABLED`)* OpenAI API Key
 
 Run bot:
 ```sh

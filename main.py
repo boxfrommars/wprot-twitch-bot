@@ -1,27 +1,32 @@
 """WprotBot"""
 import os
+
+from openai import AsyncOpenAI
 from twitchio import (  # type: ignore
     Message, PartialUser, PartialChatter)
 from twitchio.ext import commands  # type: ignore
 from dotenv import load_dotenv
 
+from ai.aibot import AIBot
 from title_manager import TitleManager
 
 
 class Bot(commands.Bot):
     """WprotBot"""
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
             self,
             reward_id: str,
             access_token: str,
             channels: list,
-            title_manager: TitleManager) -> None:
+            title_manager: TitleManager,
+            ai_bot: AIBot | None = None) -> None:
         """
         Initialise the Bot
         """
         self.title_reward_id = reward_id
         self.token = access_token
         self.title_manager = title_manager
+        self.ai_bot = ai_bot
 
         super().__init__(
             token=self.token,
@@ -46,6 +51,12 @@ class Bot(commands.Bot):
         if self.is_reward_message(message):
             # Save title for user if the reward message
             await self.title_manager.set_title(message.content, message.author)
+
+            if self.ai_bot:
+                ai_rate = await self.ai_bot.rate_title(message.content)
+                if ai_rate:
+                    await message.channel.send(
+                        f'@{message.author.name} {ai_rate}')
         else:
             # The title record if purchased, None otherwise.
             title_record = await self.title_manager.get_title(message.author)
@@ -135,10 +146,13 @@ if __name__ == '__main__':
         lifetime=int(os.getenv('TITLE_LIFETIME_SEC', '1209600')),
     )
 
+    is_ai_enabled = os.getenv('IS_AI_ENABLED', '').lower() == 'true'
+
     bot = Bot(
         reward_id=title_reward_id,
         access_token=bot_access_token,
         channels=[bot_channel],
-        title_manager=bot_title_manager
+        title_manager=bot_title_manager,
+        ai_bot=AIBot(client=AsyncOpenAI()) if is_ai_enabled else None
     )
     bot.run()
