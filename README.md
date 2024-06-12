@@ -1,4 +1,4 @@
-## Title Bot
+## Twitch Title Bot
 
 Twitch Bot that allows users to purchase a title with channel points. When the user sends their first message in chat after a long time, the bot announces the user using the title. If the `IS_AI_ENABLED` setting is enabled, the bot will also respond to the purchased title using OpenAI
 
