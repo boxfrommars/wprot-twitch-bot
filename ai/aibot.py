@@ -23,7 +23,7 @@ class AIBot:
             prompt=self.react_title_prompt,
             query=title)
 
-    async def completion(self, prompt: str, query: str) -> str | None:
+    async def completion(self, prompt: str, query: str | None) -> str | None:
         """Get completion"""
         logger.info(
             '[openai completion request] prompt: %s, query: %s', prompt, query)
@@ -57,4 +57,11 @@ if __name__ == '__main__':
     load_dotenv()
 
     ai_bot = AIBot(client=AsyncOpenAI())
-    answer = asyncio.run(ai_bot.rate_title('Mister Streamer'))
+
+    # answer = asyncio.run(ai_bot.rate_title('Mister Streamer'))
+    answer = asyncio.run(ai_bot.completion(
+        'Ты рекламщик из игры GTA V RP, который рекламирует на улицах',
+        'Коротко прорекламируй покупку титула в чате'
+    ))
+
+    print(answer)

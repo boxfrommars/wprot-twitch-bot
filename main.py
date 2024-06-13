@@ -5,7 +5,7 @@ import os
 from openai import AsyncOpenAI
 from twitchio import (  # type: ignore
     Message, PartialUser, PartialChatter)
-from twitchio.ext import commands  # type: ignore
+from twitchio.ext import commands, routines  # type: ignore
 from dotenv import load_dotenv
 
 from ai.aibot import AIBot
@@ -43,6 +43,8 @@ class Bot(commands.Bot):
         """
         logger.info('Logged in as | %s [%s]', self.nick, self.user_id)
         await self.title_manager.up()
+
+        self.advertise.start()  # pylint: disable=no-member
 
     async def event_message(self, message: Message) -> None:
 
@@ -83,6 +85,42 @@ class Bot(commands.Bot):
                     await self.announce(broadcaster, greeting)
 
         await self.handle_commands(message)
+
+    @routines.routine(minutes=30, wait_first=True)
+    async def advertise(self):
+        """Advertise"""
+
+        broadcaster = await self.connected_channels[0].user()
+        streams = await self.fetch_streams(user_ids=[broadcaster.id])
+        if streams:
+            stream = streams[0]
+
+            if stream.game_name:
+                ads = await self.ai_bot.completion(
+                    (f'Ты рекламщик из игры {stream.game_name}, '
+                     'который рекламирует на улицах'),
+                    'Коротко прорекламируй покупку титула на стриме'
+                )
+            else:
+                ads = await self.ai_bot.completion(
+                    'Ты милая добрая девочка, которая любит Эдгара',
+                    'Коротко прорекламируй покупку титула у него на стриме'
+                )
+
+            print(ads)
+            print(stream.game_name)
+            print(stream.title)
+            print(stream.started_at)
+            print(stream.tags)
+            print(stream.type)
+            print(stream.is_mature)
+            print(stream.id)
+
+            await self.connected_channels[0].send(
+                ads + ' (Титул можно купить за баллы канала)')
+
+        else:
+            print('No stream')
 
     @commands.command()
     async def tit(
