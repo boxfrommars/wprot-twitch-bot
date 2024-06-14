@@ -104,13 +104,18 @@ class Bot(commands.Bot):
         title_record = await self.title_manager.get_title(user)
 
         if title_record is None:  # do nothing if no title for the user
+            logger.info('no title for %s', user.name)
             return
 
         if action == 'delete':
             await self.title_manager.delete_title(user)
+            logger.info(
+                '[delete title] title user: %s, user: %s, title: %s',
+                user.name, ctx.author.name, title_record['title'])
             await ctx.send(f'@{user.name}, ваш титул удалён!')
         else:
             # show info
+            logger.info('[show] %s: %s', user.name, title_record['title'])
             await ctx.send(self.title_manager.format_title_info(title_record))
 
     async def close(self):
