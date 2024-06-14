@@ -18,7 +18,7 @@ Set enviroment variables:
 * `DB_NAME` *(optional, default `wprotbot.db`)* If the file doesn't exist, it will be created during the first run
 * `TITLE_COOLDOWN_SEC` *(optional, default 6 hours)* If the user hasn't written in the chat for a long time, then announce them after their message
 * `TITLE_LIFETIME_SEC` *(optional, default 2 weeks)* A title is purchased for this period
-* `GREETING_TEMPLATE` *(optional, default `{title} @{username} has joined the chat!`)* Announcement template
+* `GREETING_TEMPLATE` *(optional, default `{title} @{username}`)* Announcement template
 * `IS_AI_ENABLED` *(optional, default `False`)* If enabled, the bot will react to the purchased title using OpenAI.
 * `OPENAI_API_KEY` *(required if `IS_AI_ENABLED`)* OpenAI API Key
 * `REACT_TITLE_PROMPT` *(optional)* Prompt for the bot reaction

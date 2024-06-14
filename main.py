@@ -88,7 +88,7 @@ class Bot(commands.Bot):
 
     @routines.routine(minutes=30, wait_first=True)
     async def advertise(self):
-        """Advertise"""
+        """Advertise title purchases"""
 
         broadcaster = await self.connected_channels[0].user()
         streams = await self.fetch_streams(user_ids=[broadcaster.id])
@@ -101,6 +101,7 @@ class Bot(commands.Bot):
                 stream.tags, stream.type
             )
             advertisement = self.ai_bot.advert_title(stream.game_name)
+            logger.info('[advert] %s', advertisement)
             if advertisement:
                 await self.connected_channels[0].send(advertisement)
         else:
@@ -194,8 +195,7 @@ if __name__ == '__main__':
     # @TODO use a connection instead of db_name
     bot_title_manager = TitleManager(
         db_name=os.getenv('DB_NAME', 'wprotbot.db'),
-        template=os.getenv('GREETING_TEMPLATE',
-                           '{title} @{username} has joined the chat!'),
+        template=os.getenv('GREETING_TEMPLATE', '{title} @{username}'),
         cooldown=int(os.getenv('TITLE_COOLDOWN_SEC', '21600')),
         lifetime=int(os.getenv('TITLE_LIFETIME_SEC', '1209600')),
     )
@@ -209,10 +209,8 @@ if __name__ == '__main__':
     ]:
         prompts[prompt_key] = os.getenv(prompt_key, '')
 
-    aibot = AIBot(
-        client=AsyncOpenAI(),
-        prompts=prompts
-    ) if is_ai_enabled else None
+    aibot = AIBot(client=AsyncOpenAI(),
+                  prompts=prompts) if is_ai_enabled else None
 
     bot = Bot(
         reward_id=title_reward_id,

@@ -68,7 +68,6 @@ class AIBot:
         if ads:
             ads_template = Template(self.prompts.get('AD_TEMPLATE', '$ads'))
             ads = ads_template.substitute({'ads': ads})
-            logger.info('[advert] %s', ads)
 
             return ads
 
