@@ -93,34 +93,11 @@ class Bot(commands.Bot):
         broadcaster = await self.connected_channels[0].user()
         streams = await self.fetch_streams(user_ids=[broadcaster.id])
         if streams:
-            stream = streams[0]
-
-            if stream.game_name:
-                ads = await self.ai_bot.completion(
-                    (f'Ты рекламщик из игры {stream.game_name}, '
-                     'который рекламирует на улицах'),
-                    'Коротко прорекламируй покупку титула на стриме'
-                )
-            else:
-                ads = await self.ai_bot.completion(
-                    'Ты милая добрая девочка, которая любит Эдгара',
-                    'Коротко прорекламируй покупку титула у него на стриме'
-                )
-
-            print(ads)
-            print(stream.game_name)
-            print(stream.title)
-            print(stream.started_at)
-            print(stream.tags)
-            print(stream.type)
-            print(stream.is_mature)
-            print(stream.id)
-
-            await self.connected_channels[0].send(
-                ads + ' (Титул можно купить за баллы канала)')
-
+            advertisement = self.ai_bot.advert_title(streams[0])
+            if advertisement:
+                await self.connected_channels[0].send(advertisement)
         else:
-            print('No stream')
+            logger.info('[advert] No stream')
 
     @commands.command()
     async def tit(
