@@ -45,14 +45,16 @@ class Bot(commands.Bot):
         await self.title_manager.up()
 
     async def event_message(self, message: Message) -> None:
+
+        logger.info(
+            '[msg %s] %s',
+            message.author.name if message.author else None,
+            message.content)
+
         if message.echo:  # ignore messages sent by the bot
             return
         if self.title_manager is None:  # something wrong (for mypy...)
             return
-
-        logger.info(
-            '[%s %s] %s',
-            message.author.name, message.timestamp, message.content)
 
         if self.is_reward_message(message):
             # Save title for user if the reward message
@@ -91,8 +93,11 @@ class Bot(commands.Bot):
         """Get title info or delete title"""
 
         logger.info(
-            'command: tit, action: %s, user: %s is_mod: %s',
-            action, user.name if user else None, ctx.author.is_mod)
+            '[command tit] action: %s, user: %s, caller: %s, is_mod: %s',
+            action,
+            user.name if user else None,
+            ctx.author.name if ctx.author else None,
+            ctx.author.is_mod)
 
         if action not in ['info', 'delete']:
             return
@@ -107,15 +112,19 @@ class Bot(commands.Bot):
             logger.info('no title for %s', user.name)
             return
 
+        logger.info('[title] %s', dict(title_record))
+
         if action == 'delete':
             await self.title_manager.delete_title(user)
             logger.info(
-                '[delete title] title user: %s, user: %s, title: %s',
-                user.name, ctx.author.name, title_record['title'])
+                '[delete title] user: %s, caller: %s',
+                user.name, ctx.author.name)
             await ctx.send(f'@{user.name}, ваш титул удалён!')
         else:
             # show info
-            logger.info('[show] %s: %s', user.name, title_record['title'])
+            logger.info(
+                '[title info] %s: %s',
+                user.name, title_record['title'])
             await ctx.send(self.title_manager.format_title_info(title_record))
 
     async def close(self):
@@ -145,7 +154,10 @@ class Bot(commands.Bot):
 if __name__ == '__main__':
     load_dotenv()
 
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s %(levelname)s : %(name)s : %(message)s',
+        datefmt="%Y-%m-%d %H:%M:%S %z")
 
     title_reward_id = os.getenv('REWARD_ID')
     bot_access_token = os.getenv('ACCESS_TOKEN')
