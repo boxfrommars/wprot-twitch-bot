@@ -1,4 +1,5 @@
 """WprotBot"""
+import logging
 import os
 
 from openai import AsyncOpenAI
@@ -9,6 +10,9 @@ from dotenv import load_dotenv
 
 from ai.aibot import AIBot
 from title_manager import TitleManager
+
+
+logger = logging.getLogger(__name__)
 
 
 class Bot(commands.Bot):
@@ -37,16 +41,20 @@ class Bot(commands.Bot):
         """
         Bot logged in. Connect to db and instantiate title manager
         """
-        print(f'Logged in as | {self.nick} [{self.user_id}]')
+        logger.info('Logged in as | %s [%s]', self.nick, self.user_id)
         await self.title_manager.up()
 
     async def event_message(self, message: Message) -> None:
+
+        logger.info(
+            '[msg %s] %s',
+            message.author.name if message.author else None,
+            message.content)
+
         if message.echo:  # ignore messages sent by the bot
             return
         if self.title_manager is None:  # something wrong (for mypy...)
             return
-
-        print(f'[{message.author.name} {message.timestamp}] {message.content}')
 
         if self.is_reward_message(message):
             # Save title for user if the reward message
@@ -55,6 +63,7 @@ class Bot(commands.Bot):
             if self.ai_bot:
                 ai_rate = await self.ai_bot.rate_title(message.content)
                 if ai_rate:
+                    logger.info('[title react] %s', ai_rate)
                     await message.channel.send(
                         f'@{message.author.name} {ai_rate}')
         else:
@@ -83,6 +92,13 @@ class Bot(commands.Bot):
             user: PartialChatter | None = None) -> None:
         """Get title info or delete title"""
 
+        logger.info(
+            '[command tit] action: %s, user: %s, caller: %s, is_mod: %s',
+            action,
+            user.name if user else None,
+            ctx.author.name if ctx.author else None,
+            ctx.author.is_mod)
+
         if action not in ['info', 'delete']:
             return
 
@@ -93,13 +109,22 @@ class Bot(commands.Bot):
         title_record = await self.title_manager.get_title(user)
 
         if title_record is None:  # do nothing if no title for the user
+            logger.info('no title for %s', user.name)
             return
+
+        logger.info('[title] %s', dict(title_record))
 
         if action == 'delete':
             await self.title_manager.delete_title(user)
+            logger.info(
+                '[delete title] user: %s, caller: %s',
+                user.name, ctx.author.name)
             await ctx.send(f'@{user.name}, ваш титул удалён!')
         else:
             # show info
+            logger.info(
+                '[title info] %s: %s',
+                user.name, title_record['title'])
             await ctx.send(self.title_manager.format_title_info(title_record))
 
     async def close(self):
@@ -111,6 +136,8 @@ class Bot(commands.Bot):
 
     async def announce(self, broadcaster: PartialUser, content: str):
         """Send announcement to the broadcaster channel"""
+        logger.info('[announce] %s', content)
+
         await broadcaster.chat_announcement(
             token=self.token,
             moderator_id=str(self.user_id),
@@ -126,6 +153,11 @@ class Bot(commands.Bot):
 
 if __name__ == '__main__':
     load_dotenv()
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s %(levelname)s : %(name)s : %(message)s',
+        datefmt="%Y-%m-%d %H:%M:%S %z")
 
     title_reward_id = os.getenv('REWARD_ID')
     bot_access_token = os.getenv('ACCESS_TOKEN')
