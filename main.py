@@ -66,8 +66,8 @@ class Bot(commands.Bot):
                 ai_rate = await self.ai_bot.rate_title(message.content)
                 if ai_rate:
                     logger.info('[title react] %s', ai_rate)
-                    await message.channel.send(
-                        f'@{message.author.name} {ai_rate}')
+                    ai_rate = f'@{message.author.name} {ai_rate}'
+                    await message.channel.send(ai_rate[:499])
         else:
             # The title record if purchased, None otherwise.
             title_record = await self.title_manager.get_title(message.author)
@@ -100,7 +100,7 @@ class Bot(commands.Bot):
                 stream.id, stream.game_name, stream.title, stream.started_at,
                 stream.tags, stream.type
             )
-            advertisement = self.ai_bot.advert_title(stream.game_name)
+            advertisement = await self.ai_bot.advert_title(stream.game_name)
             logger.info('[advert] %s', advertisement)
             if advertisement:
                 await self.connected_channels[0].send(advertisement)
