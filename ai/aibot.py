@@ -1,9 +1,10 @@
 """AI Bot"""
 import asyncio
 import logging
+import os
+from string import Template
 
 from openai import AsyncOpenAI
-from twitchio import Stream  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -13,21 +14,26 @@ class AIBot:
     def __init__(
             self,
             client: AsyncOpenAI,
-            react_title_prompt: str = 'React funny to the nickname') -> None:
+            prompts: dict) -> None:
 
-        self.react_title_prompt = react_title_prompt
+        self.prompts = prompts
         self.client = client
 
     async def rate_title(self, title: str):
         """Rate title"""
         return await self.completion(
-            prompt=self.react_title_prompt,
+            prompt=self.prompts.get('REACT_TITLE_PROMPT', ''),
             query=title)
 
     async def completion(self, prompt: str, query: str) -> str | None:
         """Get completion"""
         logger.info(
             '[openai completion request] prompt: %s, query: %s', prompt, query)
+
+        if not prompt or not query:
+            logger.warning(
+                '[openai completion request]  Missing prompt or query')
+            return None
 
         completion = await self.client.chat.completions.create(
             model='gpt-4o',
@@ -48,30 +54,21 @@ class AIBot:
 
         return None
 
-    async def advert_title(self, stream: Stream) -> str | None:
+    async def advert_title(self, game_name: str | None) -> str | None:
         """Advert title"""
-        if stream.game_name and (stream.game_name not in ['Just Chatting']):
-            ads = await self.completion(
-                f'Ты герой игры {stream.game_name}',
-                ('Коротко и смешно прорекламируй покупку титула на стриме '
-                 'этой игры')
-            )
+        data = {'game_name': game_name}
+        if game_name and (game_name not in ['Just Chatting']):
+            prompt_tmpl = Template(self.prompts.get('AD_IN_GAME_PROMPT', ''))
+            query = self.prompts.get('AD_IN_GAME_QUERY', '')
         else:
-            ads = await self.completion(
-                'Ты милая добрая девочка, которая любит Эдгара',
-                ('Коротко и смешно прорекламируй покупку титула у него '
-                 'на стриме')
-            )
+            prompt_tmpl = Template(self.prompts.get('AD_NO_GAME_PROMPT', ''))
+            query = self.prompts.get('AD_NO_GAME_QUERY', '')
 
+        ads = await self.completion(prompt_tmpl.substitute(data), query)
         if ads:
-            ads += ' (Титул можно купить за баллы канала)'
-
-            logger.info(
-                ('[advert] id: %s, game: %s, title: %s, started: %s, '
-                 'tags: %s, type: %s, ads: %s'),
-                stream.id, stream.game_name, stream.title, stream.started_at,
-                stream.tags, stream.type, ads
-            )
+            ads_template = Template(self.prompts.get('AD_TEMPLATE', '$ads'))
+            ads = ads_template.substitute({'ads': ads})
+            logger.info('[advert] %s', ads)
 
             return ads
 
@@ -81,24 +78,18 @@ class AIBot:
 if __name__ == '__main__':
     # test bot
     from dotenv import load_dotenv
-    from collections import defaultdict
-
-    logging.basicConfig(level=logging.INFO)
 
     load_dotenv()
 
-    ai_bot = AIBot(client=AsyncOpenAI())
+    logging.basicConfig(level=logging.INFO)
 
-    stream_data = defaultdict(str, {
-        'id': 1,
-        'user_id': 2,
-        'started_at': '2024-07-14 14:35:00',
-        'game_name': 'Just Chatting'
-    })
+    bot_prompts = {}
+    for prompt_key in [
+        'REACT_TITLE_PROMPT', 'AD_IN_GAME_PROMPT', 'AD_IN_GAME_QUERY',
+        'AD_NO_GAME_PROMPT', 'AD_NO_GAME_QUERY', 'AD_TEMPLATE'
+    ]:
+        bot_prompts[prompt_key] = os.getenv(prompt_key, '')
 
-    print(stream_data['id'])
-
+    ai_bot = AIBot(client=AsyncOpenAI(), prompts=bot_prompts)
     # answer = asyncio.run(ai_bot.rate_title('Mister Streamer'))
-    answer = asyncio.run(ai_bot.advert_title(Stream(None, data=stream_data)))
-
-    # print(answer)
+    answer = asyncio.run(ai_bot.advert_title('Grand Theft Auto V'))

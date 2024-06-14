@@ -93,7 +93,14 @@ class Bot(commands.Bot):
         broadcaster = await self.connected_channels[0].user()
         streams = await self.fetch_streams(user_ids=[broadcaster.id])
         if streams:
-            advertisement = self.ai_bot.advert_title(streams[0])
+            stream = streams[0]
+            logger.info(
+                ('[advert needed] id: %s, game: %s, title: %s, started: %s, '
+                 'tags: %s, type: %s'),
+                stream.id, stream.game_name, stream.title, stream.started_at,
+                stream.tags, stream.type
+            )
+            advertisement = self.ai_bot.advert_title(stream.game_name)
             if advertisement:
                 await self.connected_channels[0].send(advertisement)
         else:
@@ -195,10 +202,16 @@ if __name__ == '__main__':
 
     is_ai_enabled = os.getenv('IS_AI_ENABLED', '').lower() == 'true'
 
+    prompts = {}
+    for prompt_key in [
+        'REACT_TITLE_PROMPT', 'AD_IN_GAME_PROMPT', 'AD_IN_GAME_QUERY',
+        'AD_NO_GAME_PROMPT', 'AD_NO_GAME_QUERY', 'AD_TEMPLATE'
+    ]:
+        prompts[prompt_key] = os.getenv(prompt_key, '')
+
     aibot = AIBot(
         client=AsyncOpenAI(),
-        react_title_prompt=os.getenv(
-            'REACT_TITLE_PROMPT', 'React funny to the nickname')
+        prompts=prompts
     ) if is_ai_enabled else None
 
     bot = Bot(
