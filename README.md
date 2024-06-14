@@ -21,7 +21,12 @@ Set enviroment variables:
 * `GREETING_TEMPLATE` *(optional, default `{title} @{username} has joined the chat!`)* Announcement template
 * `IS_AI_ENABLED` *(optional, default `False`)* If enabled, the bot will react to the purchased title using OpenAI.
 * `OPENAI_API_KEY` *(required if `IS_AI_ENABLED`)* OpenAI API Key
-* `REACT_TITLE_PROMPT` *(optional, default `React funny to the nickname`)* Prompt for the bot reaction
+* `REACT_TITLE_PROMPT` *(optional)* Prompt for the bot reaction
+* `AD_IN_GAME_PROMPT` *(optional)* Prompt for advertising the purchase of a title during the game
+* `AD_IN_GAME_QUERY` *(optional)* Query for advertising the purchase of a title during the game
+* `AD_NO_GAME_PROMPT` *(optional)* Prompt for advertising the purchase of a title outside of the game
+* `AD_NO_GAME_QUERY` *(optional)* Query for advertising the purchase of a title outside of the game
+* `AD_TEMPLATE` *(optional)* Title purchase advertising template
 
 Run bot:
 ```sh

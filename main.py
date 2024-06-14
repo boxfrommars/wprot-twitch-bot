@@ -5,7 +5,7 @@ import os
 from openai import AsyncOpenAI
 from twitchio import (  # type: ignore
     Message, PartialUser, PartialChatter)
-from twitchio.ext import commands  # type: ignore
+from twitchio.ext import commands, routines  # type: ignore
 from dotenv import load_dotenv
 
 from ai.aibot import AIBot
@@ -43,6 +43,8 @@ class Bot(commands.Bot):
         """
         logger.info('Logged in as | %s [%s]', self.nick, self.user_id)
         await self.title_manager.up()
+
+        self.advertise.start()  # pylint: disable=no-member
 
     async def event_message(self, message: Message) -> None:
 
@@ -83,6 +85,26 @@ class Bot(commands.Bot):
                     await self.announce(broadcaster, greeting)
 
         await self.handle_commands(message)
+
+    @routines.routine(minutes=30, wait_first=True)
+    async def advertise(self):
+        """Advertise"""
+
+        broadcaster = await self.connected_channels[0].user()
+        streams = await self.fetch_streams(user_ids=[broadcaster.id])
+        if streams:
+            stream = streams[0]
+            logger.info(
+                ('[advert needed] id: %s, game: %s, title: %s, started: %s, '
+                 'tags: %s, type: %s'),
+                stream.id, stream.game_name, stream.title, stream.started_at,
+                stream.tags, stream.type
+            )
+            advertisement = self.ai_bot.advert_title(stream.game_name)
+            if advertisement:
+                await self.connected_channels[0].send(advertisement)
+        else:
+            logger.info('[advert] No stream')
 
     @commands.command()
     async def tit(
@@ -180,10 +202,16 @@ if __name__ == '__main__':
 
     is_ai_enabled = os.getenv('IS_AI_ENABLED', '').lower() == 'true'
 
+    prompts = {}
+    for prompt_key in [
+        'REACT_TITLE_PROMPT', 'AD_IN_GAME_PROMPT', 'AD_IN_GAME_QUERY',
+        'AD_NO_GAME_PROMPT', 'AD_NO_GAME_QUERY', 'AD_TEMPLATE'
+    ]:
+        prompts[prompt_key] = os.getenv(prompt_key, '')
+
     aibot = AIBot(
         client=AsyncOpenAI(),
-        react_title_prompt=os.getenv(
-            'REACT_TITLE_PROMPT', 'React funny to the nickname')
+        prompts=prompts
     ) if is_ai_enabled else None
 
     bot = Bot(
