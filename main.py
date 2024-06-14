@@ -1,4 +1,5 @@
 """WprotBot"""
+import logging
 import os
 
 from openai import AsyncOpenAI
@@ -9,6 +10,9 @@ from dotenv import load_dotenv
 
 from ai.aibot import AIBot
 from title_manager import TitleManager
+
+
+logger = logging.getLogger(__name__)
 
 
 class Bot(commands.Bot):
@@ -37,7 +41,7 @@ class Bot(commands.Bot):
         """
         Bot logged in. Connect to db and instantiate title manager
         """
-        print(f'Logged in as | {self.nick} [{self.user_id}]')
+        logger.info('Logged in as | %s [%s]', self.nick, self.user_id)
         await self.title_manager.up()
 
     async def event_message(self, message: Message) -> None:
@@ -46,7 +50,9 @@ class Bot(commands.Bot):
         if self.title_manager is None:  # something wrong (for mypy...)
             return
 
-        print(f'[{message.author.name} {message.timestamp}] {message.content}')
+        logger.info(
+            '[%s %s] %s',
+            message.author.name, message.timestamp, message.content)
 
         if self.is_reward_message(message):
             # Save title for user if the reward message
@@ -55,6 +61,7 @@ class Bot(commands.Bot):
             if self.ai_bot:
                 ai_rate = await self.ai_bot.rate_title(message.content)
                 if ai_rate:
+                    logger.info('[title react] %s', ai_rate)
                     await message.channel.send(
                         f'@{message.author.name} {ai_rate}')
         else:
@@ -82,6 +89,10 @@ class Bot(commands.Bot):
             action: str | None = 'info',
             user: PartialChatter | None = None) -> None:
         """Get title info or delete title"""
+
+        logger.info(
+            'command: tit, action: %s, user: %s is_mod: %s',
+            action, user.name if user else None, ctx.author.is_mod)
 
         if action not in ['info', 'delete']:
             return
@@ -111,6 +122,8 @@ class Bot(commands.Bot):
 
     async def announce(self, broadcaster: PartialUser, content: str):
         """Send announcement to the broadcaster channel"""
+        logger.info('[announce] %s', content)
+
         await broadcaster.chat_announcement(
             token=self.token,
             moderator_id=str(self.user_id),
@@ -126,6 +139,8 @@ class Bot(commands.Bot):
 
 if __name__ == '__main__':
     load_dotenv()
+
+    logging.basicConfig(level=logging.INFO)
 
     title_reward_id = os.getenv('REWARD_ID')
     bot_access_token = os.getenv('ACCESS_TOKEN')
