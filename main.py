@@ -150,13 +150,6 @@ class Bot(commands.Bot):
                 user.name, title_record['title'])
             await ctx.send(self.title_manager.format_title_info(title_record))
 
-    async def close(self):
-        """
-        Close database connection before bot shutdown
-        """
-        await self.title_manager.close()
-        await super().close()
-
     async def announce(self, broadcaster: PartialUser, content: str):
         """Send announcement to the broadcaster channel"""
         logger.info('[announce] %s', content)
@@ -172,6 +165,14 @@ class Bot(commands.Bot):
         """Check the message for the reward"""
         return message.tags \
             and message.tags.get('custom-reward-id') == self.title_reward_id
+
+    async def close(self):
+        """
+        Close database connection before bot shutdown
+        """
+        await self.title_manager.close()
+        self.advertise.cancel()  # pylint: disable=no-member
+        await super().close()
 
 
 if __name__ == '__main__':
