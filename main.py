@@ -103,7 +103,7 @@ class Bot(commands.Bot):
             advertisement = await self.ai_bot.advert_title(stream.game_name)
             logger.info('[advert] %s', advertisement)
             if advertisement:
-                await self.connected_channels[0].send(advertisement)
+                await self.connected_channels[0].send(advertisement[:495])
         else:
             logger.info('[advert] No stream')
 
